@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth, type UserRole } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
+import { sendDemoOtp, verifyDemoOtp } from "@/lib/demo-auth";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoOtp, setDemoOtp] = useState<string | null>(null);
 
   const roles: { value: UserRole; label: string; description: string }[] = [
     { value: "worker", label: "Worker", description: "Field worker or staff" },
@@ -31,8 +33,17 @@ export default function LoginScreen() {
       Alert.alert("Error", "Please enter your email");
       return;
     }
-    // TODO: Call API to send OTP
-    setStep("otp");
+    setLoading(true);
+    try {
+      const generatedOtp = await sendDemoOtp(email);
+      setDemoOtp(generatedOtp);
+      Alert.alert("Demo OTP Sent", `OTP: ${generatedOtp}\n\nEnter this code to login`);
+      setStep("otp");
+    } catch (error) {
+      Alert.alert("Error", "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOtp = async () => {
@@ -43,6 +54,11 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      const user = await verifyDemoOtp(email, otp);
+      if (!user) {
+        Alert.alert("Invalid OTP", "Please enter a valid 6-digit OTP");
+        return;
+      }
       await login(email, otp, selectedRole);
       router.replace("/(tabs)");
     } catch (error) {
@@ -102,9 +118,12 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 onPress={handleSendOtp}
-                className="bg-primary p-4 rounded-lg items-center"
+                disabled={loading}
+                className={cn("p-4 rounded-lg items-center", loading ? "opacity-50" : "bg-primary")}
               >
-                <Text className="text-white font-semibold">Send OTP</Text>
+                <Text className="text-white font-semibold">
+                  {loading ? "Sending..." : "Send OTP"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => setStep("role")}>
@@ -119,7 +138,7 @@ export default function LoginScreen() {
               <View>
                 <Text className="text-sm font-semibold text-foreground mb-2">Enter OTP</Text>
                 <Text className="text-xs text-muted mb-3">
-                  We've sent a 6-digit code to {email}
+                  We have sent a 6-digit code to {email}
                 </Text>
                 <TextInput
                   placeholder="000000"
@@ -131,6 +150,12 @@ export default function LoginScreen() {
                   placeholderTextColor="#9BA1A6"
                 />
               </View>
+
+              {demoOtp && (
+                <View className="bg-success bg-opacity-10 border border-success border-opacity-30 rounded-lg p-3">
+                  <Text className="text-xs font-semibold text-success">Demo OTP: {demoOtp}</Text>
+                </View>
+              )}
 
               <TouchableOpacity
                 onPress={handleVerifyOtp}
@@ -147,6 +172,14 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* Demo Credentials Info */}
+          <View className="bg-warning bg-opacity-10 border border-warning border-opacity-30 rounded-lg p-4">
+            <Text className="text-xs font-semibold text-warning mb-2">📱 Demo Mode</Text>
+            <Text className="text-xs text-warning text-opacity-80 leading-relaxed">
+              Try: worker@demo.com{"\n"}OTP: 123456{"\n\n"}Or use any email with any 6-digit code
+            </Text>
+          </View>
 
           {/* Footer */}
           <View className="items-center gap-2">

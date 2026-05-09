@@ -121,11 +121,7 @@ function RootLayoutNav() {
   const { isSignedIn, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-      </Stack>
-    );
+    return null;
   }
 
   return (

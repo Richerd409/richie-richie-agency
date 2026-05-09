@@ -46,8 +46,9 @@ export default function WorkerHomeScreen() {
   ];
 
   const unreadNotifications = 3;
-  const currentStatus = "On Duty";
-  const todayEarnings = "₹450";
+  const currentStatus = user?.role === "worker" ? "On Duty" : "Idle";
+  const todayEarnings = "₹1,250";
+  const checkinTime = "09:15 AM";
 
   const handleCheckIn = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -122,7 +123,7 @@ export default function WorkerHomeScreen() {
               </View>
               <View className="items-end">
                 <Text className="text-xs text-white text-opacity-70">Check-in Time</Text>
-                <Text className="text-lg font-semibold text-white mt-1">09:15 AM</Text>
+                <Text className="text-lg font-semibold text-white mt-1">{checkinTime}</Text>
               </View>
             </View>
           </View>
